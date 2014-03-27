@@ -24,3 +24,4 @@ pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 /* Function prototypes */
 int setup(int, char* [], struct propset []);
 void *animate(void*);
+void draw_cannon();

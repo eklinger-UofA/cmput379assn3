@@ -52,6 +52,9 @@ int main(int ac, char *av[])
 			exit(0);
 		}
 
+    /* draw the cannon at the middle of the screen */
+    draw_cannon();
+
 	/* process user input */
 	while(1) {
 		c = getch();
@@ -64,6 +67,10 @@ int main(int ac, char *av[])
 			if ( i < num_msg )
 				props[i].dir = -props[i].dir;
 		}
+		pthread_mutex_lock(&mx);	/* only one thread	*/
+	       mvprintw(LINES-2,0,"%d",c); /* Print the input character */
+		   refresh();			/* and show it		*/
+		pthread_mutex_unlock(&mx);	/* done with curses	*/
 	}
 
 	/* cancel all the threads */
@@ -128,3 +135,15 @@ void *animate(void *arg)
 			info->dir = -1;
 	}
 }
+
+void draw_cannon(){
+    int i;
+	pthread_mutex_lock(&mx);	/* only one thread	*/
+	    //mvprintw(LINES-2,0,"|"); /* Print the input character */
+        for(i=0;i<10;i++){
+	        mvprintw(LINES-2,COLS-i,"%d",i); /* Print the input character */
+        }
+	   refresh();			/* and show it		*/
+	pthread_mutex_unlock(&mx);	/* done with curses	*/
+}
+
