@@ -1,4 +1,13 @@
 /*
+ * saucer.c: ITS A SPACESHIP GAME!!!
+ *
+ * Protect the home work, Terra from the evil alien invaders
+ *
+ * Details on controls to follow
+ */
+
+/* TODO remove this block once i've taken everything i need from it */
+/*
  * tanimate.c: animate several strings using threads, curses, usleep()
  *
  *	bigidea one thread for each animated string
@@ -9,26 +18,8 @@
  *	        nice to put screen handling in its own thread
  */
 
-#include	<stdio.h>
-//#include	<curses.h>
-#include	<ncurses.h>
-#include	<pthread.h>
-#include	<stdlib.h>
-#include	<unistd.h>
-#include	<string.h>
 #include    "saucer.h"
 
-#define	MAXMSG	10		/* limit to number of strings	*/
-#define	TUNIT   20000		/* timeunits in microseconds */
-
-struct	propset {
-		char	*str;	/* the message */
-		int	row;	/* the row     */
-		int	delay;  /* delay in time units */
-		int	dir;	/* +1 or -1	*/
-	};
-
-pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int ac, char *av[])
 {
@@ -39,12 +30,19 @@ int main(int ac, char *av[])
 	int	       num_msg ;	/* number of strings	*/
 	int	     i;
 
-	if ( ac == 1 ){
-		printf("usage: tanimate string ..\n"); 
-		exit(1);
-	}
+    /* TODO add my own usage message / started tutorial */
+	//if ( ac == 1 ){
+//		printf("usage: tanimate string ..\n"); 
+//		exit(1);
+//	}
 
-	num_msg = setup(ac-1,av+1,props);
+    char* ship = "<--->";
+    char* ships[NUM_OF_SHIPS];
+    ships[0] = ship;
+    ships[1] = ship;
+    ships[2] = ship;
+    //num_msg = setup(ac-1,av+1,props);
+	num_msg = setup(NUM_OF_SHIPS, ships, props);
 
 	/* create all the threads */
 	for(i=0 ; i<num_msg; i++)

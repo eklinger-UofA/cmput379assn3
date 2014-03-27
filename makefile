@@ -1,5 +1,6 @@
-make: saucer.o
+make:
+	cc -c saucer.c saucer.h
 	cc saucer.o -lncurses -lpthread -o saucer
 
-saucer.o:
-	cc -c saucer.h saucer.c -lncurses -lpthread
+clean:
+	rm -f *.o *~ core *.h.gch
