@@ -16,6 +16,7 @@
 #include	<stdlib.h>
 #include	<unistd.h>
 #include	<string.h>
+#include    "saucer.h"
 
 #define	MAXMSG	10		/* limit to number of strings	*/
 #define	TUNIT   20000		/* timeunits in microseconds */
