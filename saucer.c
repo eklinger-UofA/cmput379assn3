@@ -23,12 +23,13 @@
 
 int main(int ac, char *av[])
 {
-	int	       c;		/* user input		*/
-	pthread_t      thrds[MAXMSG];	/* the threads		*/
-	struct propset props[MAXMSG];	/* properties of string	*/
-	void	       *animate();	/* the function		*/
-	int	       num_msg ;	/* number of strings	*/
-	int	     i;
+	int	            c;		        /* user input		*/
+	pthread_t       thrds[MAXMSG];	/* the threads		*/
+	struct propset  props[MAXMSG];	/* properties of string	*/
+    struct cannon_info *cannon;   
+	void	        *animate();	    /* the function		*/
+	int	            num_msg ;	    /* number of strings	*/
+	int	            i;
 
     /* TODO add my own usage message / started tutorial */
 	//if ( ac == 1 ){
@@ -53,13 +54,16 @@ int main(int ac, char *av[])
 		}
 
     /* draw the cannon at the middle of the screen */
-    draw_cannon();
+    char* cannon_string = "|";
+    cannon = malloc(sizeof(struct cannon_info));
+    cannon->str = cannon_string;
+    draw_cannon(cannon);
 
 	/* process user input */
 	while(1) {
 		c = getch();
 		if ( c == 'Q' ) break;
-		if ( c == ' ' )
+		if ( c == ' ' ) /* This one is the spacebar */
 			for(i=0;i<num_msg;i++)
 				props[i].dir = -props[i].dir;
 		if ( c >= '0' && c <= '9' ){
@@ -67,6 +71,14 @@ int main(int ac, char *av[])
 			if ( i < num_msg )
 				props[i].dir = -props[i].dir;
 		}
+        if ( c == 67 ) /* move the cannon right */
+            move_cannon(1, cannon);
+        if ( c == 68 ) /* move the cannon left */
+            move_cannon(-1, cannon);
+        // TODO add a left and right arrow catch for moving the cannon
+
+        // TODO Add a spacebar catch to fire a rocket
+        // Rocket will be in another thread, needs its starting poition to launch from
 		pthread_mutex_lock(&mx);	/* only one thread	*/
 	       mvprintw(LINES-2,0,"%d",c); /* Print the input character */
 		   refresh();			/* and show it		*/
@@ -92,7 +104,8 @@ int setup(int nstrings, char *strings[], struct propset props[])
 		props[i].str = strings[i];	/* the message	*/
 		props[i].row = i;		/* the row	*/
 		props[i].delay = 1+(rand()%15);	/* a speed	*/
-		props[i].dir = ((rand()%2)?1:-1);	/* +1 or -1	*/
+		//props[i].dir = ((rand()%2)?1:-1);	/* +1 or -1	*/
+		props[i].dir = 1;	/* +1 or -1	*/
 	}
 
 	/* set up curses */
@@ -128,22 +141,40 @@ void *animate(void *arg)
 		/* move item to next column and check for bouncing	*/
 
 		col += info->dir;
+		if (  col+len >= COLS && info->dir == 1 ){
+            pthread_exit(NULL);
+        }
 
-		if ( col <= 0 && info->dir == -1 )
-			info->dir = 1;
-		else if (  col+len >= COLS && info->dir == 1 )
-			info->dir = -1;
+		//if ( col <= 0 && info->dir == -1 )
+	//		info->dir = 1;
+	//	else if (  col+len >= COLS && info->dir == 1 )
+	//		info->dir = -1;
 	}
 }
 
-void draw_cannon(){
+void draw_cannon(struct cannon_info *cannon){
     int i;
 	pthread_mutex_lock(&mx);	/* only one thread	*/
 	    //mvprintw(LINES-2,0,"|"); /* Print the input character */
         for(i=0;i<10;i++){
 	        mvprintw(LINES-2,COLS-i,"%d",i); /* Print the input character */
         }
-	   refresh();			/* and show it		*/
+		move(LINES-1,COLS-1);	/* park cursor		*/
+	    refresh();			/* and show it		*/
+        cannon->row = LINES-3;
+        cannon->col = COLS/2;
+        mvprintw(cannon->row, cannon->col, cannon->str);
+		move(LINES-1,COLS-1);	/* park cursor		*/
+	    refresh();			/* and show it		*/
 	pthread_mutex_unlock(&mx);	/* done with curses	*/
 }
 
+void move_cannon(int direction, struct cannon_info *cannon){
+	pthread_mutex_lock(&mx);	/* only one thread	*/
+        mvprintw(cannon->row, cannon->col, " ");
+        cannon->col += direction;
+        mvprintw(cannon->row, cannon->col, "|");
+		move(LINES-1,COLS-1);	/* park cursor		*/
+	    refresh();			/* and show it		*/
+	pthread_mutex_unlock(&mx);	/* done with curses	*/
+}

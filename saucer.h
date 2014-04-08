@@ -19,9 +19,17 @@ struct	propset {
 		int	dir;	/* +1 or -1	*/
 	};
 
+struct cannon_info {
+        char *str;
+        int row;
+        int col;
+};
+
 pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
+sig_atomic_t rockets = 0;
 
 /* Function prototypes */
 int setup(int, char* [], struct propset []);
 void *animate(void*);
-void draw_cannon();
+void draw_cannon(struct cannon_info *cannon);
+void move_cannon(int, struct cannon_info *cannon);
