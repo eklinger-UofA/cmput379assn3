@@ -3,7 +3,7 @@
  *
  * Protect the home world, Terra from the evil alien invaders
  *
- * Details on controls to follow
+ * Details on controls to in the README
  */
 
 #include    "saucer.h"
@@ -20,6 +20,7 @@ int main(int ac, char *av[])
 		void	            *animate();	                /* the function */
         void                *spawn_ships();             /* the function */
         void                *keep_score();              /* the function */
+        void                *fire_rocket();              /* the function */
 		int	                num_msg ;	                /* number of strings */
 		int	                i;                          /* loop counter */
 
@@ -275,12 +276,6 @@ void *fire_rocket(void *arg)
 void draw_cannon(struct cannon_info *cannon){
         int i;
  	    pthread_mutex_lock(&mx);	/* only one thread	*/
- 	    //mvprintw(LINES-2,0,"|"); /* Print the input character */
-        for(i=0;i<10;i++){
- 	            mvprintw(LINES-2,COLS-i,"%d",i); /* Print the input character */
-        }
- 	   	move(LINES-1,COLS-1);	/* park cursor		*/
- 	    refresh();			/* and show it		*/
         cannon->row = LINES-3;
         cannon->col = COLS/2;
         mvprintw(cannon->row, cannon->col, cannon->str);
@@ -290,18 +285,18 @@ void draw_cannon(struct cannon_info *cannon){
 }
 
 void move_cannon(int direction, struct cannon_info *cannon){
-        pthread_mutex_lock(&mx);	/* only one thread	*/
         cannon->col += direction;
         if(cannon->col >= 0 && cannon->col <= COLS-1){
+                pthread_mutex_lock(&mx);	/* only one thread	*/
                 mvprintw(cannon->row, cannon->col-direction, " ");
                 mvprintw(cannon->row, cannon->col, "|");
 		        move(LINES-1,COLS-1);	/* park cursor		*/
 		        refresh();			/* and show it		*/
+		        pthread_mutex_unlock(&mx);	/* done with curses	*/
         }
         else{
                 cannon->col -= direction;
         }
-		pthread_mutex_unlock(&mx);	/* done with curses	*/
 }
 
 struct ship* create_list(int row, int col){
@@ -353,7 +348,6 @@ struct ship* find_ship(int row, int col){
 
     while(ptr != NULL){
         if(ptr->row == row && ptr->alive == 1){
-                //if(ptr->col <= col <= ptr->col+strlen(ptr->str)){
                 if(ptr->col <= col && col <= ptr->col+strlen(ptr->str)){
                         found = 1;
                         break;
@@ -370,39 +364,3 @@ struct ship* find_ship(int row, int col){
         return NULL;
     }
 }
-
-/* TODO delete */
-/*
-int delete_ship(struct ship *ship_to_delete){
-    struct ship *del = head;
-    struct ship *prev = NULL;
-
-    while(del != NULL){
-        if(del == ship_to_delete){
-            break;
-        }
-        prev = del;
-        del = del->next;
-    }
-        
-    if(del == NULL){
-        return -1;
-    }
-    else{
-        if(prev != NULL){
-            prev->next = del->next;
-        }
-        if(del == current){
-            current=prev;
-        }
-        else if(del == head){
-            head = del->next;
-        }
-    }
-
-    free(del);
-    del=NULL;
-
-    return 0;
-}
-*/
