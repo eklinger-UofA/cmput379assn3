@@ -27,6 +27,7 @@ int main(int ac, char *av[])
 	pthread_t       thrds[MAXMSG];	/* the threads		*/
 	struct propset  props[MAXMSG];	/* properties of string	*/
     struct cannon_info *cannon;   
+    struct rocket   rockets[10];
 	void	        *animate();	    /* the function		*/
 	int	            num_msg ;	    /* number of strings	*/
 	int	            i;
@@ -63,9 +64,19 @@ int main(int ac, char *av[])
 	while(1) {
 		c = getch();
 		if ( c == 'Q' ) break;
-		if ( c == ' ' ) /* This one is the spacebar */
-			for(i=0;i<num_msg;i++)
-				props[i].dir = -props[i].dir;
+		if ( c == ' ' ){ /* This one is the spacebar */ //for(i=0;i<num_msg;i++) //	props[i].dir = -props[i].dir;
+            /* Need to select a rocket and fire it */
+            char* rocket_string = "^";
+            rockets[0].str = rocket_string;
+            rockets[0].row = cannon->row-1;
+            rockets[0].col = cannon->col;
+            rockets[0].delay = 3;
+            if ( pthread_create(&thrds[9], NULL, fire_rocket, &rockets[0])){
+			    fprintf(stderr,"error creating thread");
+			    endwin();
+			    exit(0);
+		    }   
+        }
 		if ( c >= '0' && c <= '9' ){
 			i = c - '0';
 			if ( i < num_msg )
@@ -152,6 +163,43 @@ void *animate(void *arg)
 	}
 }
 
+/* the code that fires a rocket in a thread */
+void *fire_rocket(void *arg)
+{
+    //struct propset *info = arg;		/* point to info block	*/
+    struct rocket *rocket_info = arg;		/* point to info block	*/
+    // len will be 1 for a rocket of char '^'
+	//int	len = strlen(info->str)+2;	/* +2 for padding	*/
+	//int	col = rand()%(COLS-len-3);	/* space for padding	*/
+
+	while( 1 )
+	{
+		usleep(rocket_info->delay*TUNIT);
+
+		pthread_mutex_lock(&mx);	/* only one thread	*/
+		   move( rocket_info->row, rocket_info->col );	/* can call curses	*/
+		   addch(' ');			/* at a the same time	*/
+		   move( rocket_info->row-1, rocket_info->col );	/* can call curses	*/
+		   addstr( rocket_info->str );		/* Since I doubt it is	*/
+		   addch(' ');			/* reentrant		*/
+		   move(LINES-1,COLS-1);	/* park cursor		*/
+		   refresh();			/* and show it		*/
+		pthread_mutex_unlock(&mx);	/* done with curses	*/
+
+		/* move item to next column and check for bouncing	*/
+
+		rocket_info->row = rocket_info->row -= 1;
+        //if (  col+len >= COLS && info->dir == 1 ){
+        //    pthread_exit(NULL);
+        //}
+
+		//if ( col <= 0 && info->dir == -1 )
+	//		info->dir = 1;
+	//	else if (  col+len >= COLS && info->dir == 1 )
+	//		info->dir = -1;
+	}
+}
+
 void draw_cannon(struct cannon_info *cannon){
     int i;
 	pthread_mutex_lock(&mx);	/* only one thread	*/
@@ -171,10 +219,21 @@ void draw_cannon(struct cannon_info *cannon){
 
 void move_cannon(int direction, struct cannon_info *cannon){
 	pthread_mutex_lock(&mx);	/* only one thread	*/
-        mvprintw(cannon->row, cannon->col, " ");
-        cannon->col += direction;
-        mvprintw(cannon->row, cannon->col, "|");
-		move(LINES-1,COLS-1);	/* park cursor		*/
-	    refresh();			/* and show it		*/
+        if(cannon->col > 0 && cannon->col <= COLS-1){
+            mvprintw(cannon->row, cannon->col, " ");
+            cannon->col += direction;
+            mvprintw(cannon->row, cannon->col, "|");
+		    move(LINES-1,COLS-1);	/* park cursor		*/
+	        refresh();			/* and show it		*/
+        }
+        else{
+            mvprintw(cannon->row, cannon->col, " ");
+            cannon->col -= direction;
+            mvprintw(cannon->row, cannon->col, "|");
+		    move(LINES-1,COLS-1);	/* park cursor		*/
+	        refresh();			/* and show it		*/
+        }
 	pthread_mutex_unlock(&mx);	/* done with curses	*/
 }
+
+
