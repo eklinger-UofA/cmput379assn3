@@ -63,6 +63,7 @@ int delete_ship(int, int);
 //void setup_ncurses(int, char* [], struct propset []);
 void setup_ncurses();
 void *spawn_ships(void*);
+void *keep_score(void*);
 void *animate(void*);
 void *fire_rocket(void*);
 void draw_cannon(struct cannon_info *cannon);

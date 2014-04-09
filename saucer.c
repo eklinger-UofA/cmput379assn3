@@ -24,13 +24,16 @@
 int main(int ac, char *av[])
 {
 	int	            c;		        /* user input		*/
-	//pthread_t       thrds[MAXMSG];	/* the threads		*/
-	pthread_t       thrds[MAX_ROCKET+1];	/* the threads		*/
+	//pthread_t       thrds[MAX_ROCKET+1];	/* the threads		*/
+	pthread_t       rocket_threads[MAX_ROCKET];	/* the threads		*/
+    pthread_t       spawn_thread;
+    pthread_t       score_thread;
 	//struct propset  props[MAXMSG];	/* properties of string	*/
     struct cannon_info *cannon;   
     struct rocket   rockets[10];
 	void	        *animate();	    /* the function		*/
-    void            *spawn_ships();
+    void            *spawn_ships(); /* the function */
+    void            *keep_score(); /* the function */
 	int	            num_msg ;	    /* number of strings	*/
 	int	            i;
 
@@ -48,7 +51,15 @@ int main(int ac, char *av[])
     add_ship(0, 0);
 
     //if(pthread_create(&thrds[0], NULL, animate, head)){
-    if(pthread_create(&thrds[MAX_ROCKET], NULL, spawn_ships, head)){
+    /* Create a thread to spawn and manage new ships */
+    if(pthread_create(&spawn_thread, NULL, spawn_ships, head)){
+	        fprintf(stderr,"error creating thread");
+			endwin();
+			exit(0);
+	}
+
+    /* Create a thread to keep track and update the score */
+    if(pthread_create(&score_thread, NULL, keep_score, head)){
 	        fprintf(stderr,"error creating thread");
 			endwin();
 			exit(0);
@@ -79,17 +90,12 @@ int main(int ac, char *av[])
             rockets[0].row = cannon->row-1;
             rockets[0].col = cannon->col;
             rockets[0].delay = 3;
-            if ( pthread_create(&thrds[9], NULL, fire_rocket, &rockets[0])){
+            if ( pthread_create(&rocket_threads[9], NULL, fire_rocket, &rockets[0])){
 			    fprintf(stderr,"error creating thread");
 			    endwin();
 			    exit(0);
 		    }   
         }
-		//if ( c >= '0' && c <= '9' ){
-		//	i = c - '0';
-		//	if ( i < num_msg )
-		//		props[i].dir = -props[i].dir;
-		//}
         if ( c == 67 ) /* move the cannon right */
             move_cannon(1, cannon);
         if ( c == 68 ) /* move the cannon left */
@@ -128,7 +134,7 @@ void setup_ncurses()
 
 void *spawn_ships(void *arg){
 
-	pthread_t       thrds[NUM_OF_SHIPS];	/* the threads		*/
+	pthread_t thrds[NUM_OF_SHIPS];	/* the threads */
     int current_ship_thread = 0;
     int row = 0;
 
@@ -150,6 +156,20 @@ void *spawn_ships(void *arg){
     }
 }
 
+void *keep_score(void* arg){
+	while( 1 )
+	{
+		usleep(10*TUNIT);
+
+		pthread_mutex_lock(&mx);	/* only one thread	*/
+        mvprintw(LINES-1,COLS/4,"Rocket Remaining: %d ", total_rockets);
+	    mvprintw(LINES-1,COLS/2,"Escaped ships: %d", escaped_ships);
+	    mvprintw(LINES-1,(COLS/4)*3,"Score: %d", score);
+		move(LINES-1,COLS-1);	/* park cursor		*/
+		refresh();			        /* and show it		*/
+		pthread_mutex_unlock(&mx);	/* done with curses	*/
+    }
+}
 
 /* the code that runs in each thread */
 void *animate(void *arg)
@@ -178,6 +198,7 @@ void *animate(void *arg)
 		if (ship_info->col+strlen(ship_info->str) >= COLS){
             /* means ship has left the screen */
             /* TODO increment the escaped ships counter */
+            escaped_ships += 1;
             pthread_exit(NULL);
         }
 	}
@@ -188,6 +209,7 @@ void *fire_rocket(void *arg)
 {
     struct rocket *rocket_info = arg;		/* point to info block	*/
 
+    total_rockets -= 1;
 	while( 1 )
 	{
 		usleep(rocket_info->delay*TUNIT);
