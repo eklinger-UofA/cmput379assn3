@@ -23,6 +23,9 @@ int main(int ac, char *av[])
         void                *fire_rocket();              /* the function */
 		int	                num_msg ;	                /* number of strings */
 		int	                i;                          /* loop counter */
+        int rocket_id = 0;
+        char* cannon_string = "|";
+        char* rocket_string = "^";
 
 	    setup_ncurses();
 
@@ -41,7 +44,6 @@ int main(int ac, char *av[])
  	   }
 
         /* draw the cannon at the middle of the screen */
-        char* cannon_string = "|";
         cannon = malloc(sizeof(struct cannon_info));
         cannon->str = cannon_string;
         draw_cannon(cannon);
@@ -52,8 +54,7 @@ int main(int ac, char *av[])
 				if ( c == 'Q' ) break;
 				if ( c == ' ' && game_over == 0 ){ 
                         /* Need to select a rocket and fire it */
-                        char* rocket_string = "^";
-                        int rocket_id = current_rocket_thread;
+                        rocket_id = current_rocket_thread;
                         rockets[rocket_id].str = rocket_string;
                         rockets[rocket_id].row = cannon->row-1;
                         rockets[rocket_id].col = cannon->col;
@@ -69,23 +70,6 @@ int main(int ac, char *av[])
                         move_cannon(1, cannon);
                 if ( c == 68 && game_over == 0 ) /* move the cannon left */
                         move_cannon(-1, cannon);
-                /* TODO rm this since its just debug output */
-                if ( c == 'i'){
- 		   		        pthread_mutex_lock(&mx);	/* only one thread	*/
-                        mvprintw(LINES-5, 0,"Row: %d ", current->row);
- 	                    mvprintw(LINES-4, 0,"Col: %d ", current->col);
- 		   		        move(LINES-1,COLS-1);	/* park cursor		*/
- 		   		        refresh();			        /* and show it		*/
- 		   		        pthread_mutex_unlock(&mx);	/* done with curses	*/
-                }
-                if(c == 'h'){
-                        head->alive = 0;
-                }
-
-		        pthread_mutex_lock(&mx);	    /* only one thread	*/
-	            mvprintw(LINES-2,0,"%d",c);  /* Print the input character */
-		        refresh();			        /* and show it		*/
-		        pthread_mutex_unlock(&mx);	    /* done with curses	*/
 	    }
 
 		/* cancel all the threads */
@@ -95,6 +79,7 @@ int main(int ac, char *av[])
 			//pthread_cancel(thrds[i]);
 		endwin();
     
+        /* TODO */
         /* before quitting, and after threads exit free all remaining ship nodes */
 		//pthread_t       rocket_threads[MAX_ROCKET];	/* the threads		*/
         //pthread_t       spawn_thread;
@@ -152,7 +137,8 @@ void *keep_score(void* arg)
  	   	                pthread_mutex_lock(&mx);	/* only one thread	*/
  	                    clear();
  	                    mvprintw(LINES-8, (COLS/2)-(strlen(str)/2),str);
- 	                    mvprintw(LINES-4, 0, "GAME OVER!!!");
+ 	                    mvprintw(LINES-5, 0, "GAME OVER!!!");
+                        mvprintw(LINES-4, 0, "Your score was: %d ", score);
  	                    mvprintw(LINES-3, 0,
                             "You had this many rockets remaining: %d ", total_rockets);
  	                    mvprintw(LINES-2, 0,
@@ -237,12 +223,6 @@ void *fire_rocket(void *arg)
                 /* check if any ship is hit */
                 ship_hit = find_ship(rocket_info->row, rocket_info->col);
                 if(ship_hit != NULL){
-                        /* TODO remove these debug prints */
-                        mvprintw(LINES-9, 0, "rocket row: %d", rocket_info->row);
-                        mvprintw(LINES-8, 0, "rocket col: %d", rocket_info->col);
-                        mvprintw(LINES-7, 0, "SHIP HIT row: %d", ship_hit->row);
-                        mvprintw(LINES-6, 0, "SHIP HIT col: %d", ship_hit->col);
-                        mvprintw(LINES-5, 0, "SHIP HIT");
                         ship_hit->alive=0;
   	   		   	        pthread_mutex_lock(&mx);	/* only one thread	*/
                         mvprintw(rocket_info->row-1, rocket_info->col, " ");
@@ -275,6 +255,7 @@ void *fire_rocket(void *arg)
 
 void draw_cannon(struct cannon_info *cannon){
         int i;
+
  	    pthread_mutex_lock(&mx);	/* only one thread	*/
         cannon->row = LINES-3;
         cannon->col = COLS/2;
