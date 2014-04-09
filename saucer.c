@@ -100,6 +100,11 @@ int main(int ac, char *av[])
             move_cannon(1, cannon);
         if ( c == 68 ) /* move the cannon left */
             move_cannon(-1, cannon);
+        if (game_over > 0){
+	        clear();
+	        mvprintw(LINES-3,0,"GAME OVER");
+	        mvprintw(LINES-1,0,"'Q' to quit");
+        }
 
 		pthread_mutex_lock(&mx);	    /* only one thread	*/
 	       mvprintw(LINES-2,0,"%d",c);  /* Print the input character */
@@ -126,8 +131,8 @@ void setup_ncurses()
 	noecho();
 	clear();
     /* print game information */
-	mvprintw(LINES-1,0,"'Q' to quit, 'space' to shoot");
-	mvprintw(LINES-1,COLS/4,"Rocket Remaining: %d", total_rockets);
+	mvprintw(LINES-1,0,"'Q' to quit");
+	mvprintw(LINES-1,COLS/4,"Rockets: %d", total_rockets);
 	mvprintw(LINES-1,COLS/2,"Escaped ships: %d", escaped_ships);
 	mvprintw(LINES-1,(COLS/4)*3,"Score: %d", score);
 }
@@ -162,7 +167,7 @@ void *keep_score(void* arg){
 		usleep(10*TUNIT);
 
 		pthread_mutex_lock(&mx);	/* only one thread	*/
-        mvprintw(LINES-1,COLS/4,"Rocket Remaining: %d ", total_rockets);
+        mvprintw(LINES-1,COLS/4,"Rockets: %d ", total_rockets);
 	    mvprintw(LINES-1,COLS/2,"Escaped ships: %d", escaped_ships);
 	    mvprintw(LINES-1,(COLS/4)*3,"Score: %d", score);
 		move(LINES-1,COLS-1);	/* park cursor		*/
@@ -174,10 +179,7 @@ void *keep_score(void* arg){
 /* the code that runs in each thread */
 void *animate(void *arg)
 {
-	//struct propset *info = arg;		/* point to info block	*/
     struct ship *ship_info = arg;
-	//int	len = strlen(info->str)+2;	/* +2 for padding	*/
-	//int	col = rand()%(COLS-len-3);	/* space for padding	*/
 
 	while( 1 )
 	{
@@ -195,10 +197,14 @@ void *animate(void *arg)
 		/* move item to next column and check for bouncing	*/
 
 		ship_info->col += 1;
-		if (ship_info->col+strlen(ship_info->str) >= COLS){
+		//if (ship_info->col+strlen(ship_info->str) >= COLS){
+		if (ship_info->col >= COLS){
             /* means ship has left the screen */
             /* TODO increment the escaped ships counter */
             escaped_ships += 1;
+            if(escaped_ships >= 5){
+                game_over = 1;
+            }
             pthread_exit(NULL);
         }
 	}
@@ -248,13 +254,15 @@ void draw_cannon(struct cannon_info *cannon){
 
 void move_cannon(int direction, struct cannon_info *cannon){
 	pthread_mutex_lock(&mx);	/* only one thread	*/
-        if(cannon->col > 0 && cannon->col <= COLS-1){
-            mvprintw(cannon->row, cannon->col, " ");
-            cannon->col += direction;
-            mvprintw(cannon->row, cannon->col, "|");
-		    move(LINES-1,COLS-1);	/* park cursor		*/
-	        refresh();			/* and show it		*/
-        }
+
+    if(cannon->col > 0 && cannon->col <= COLS-1){
+        mvprintw(cannon->row, cannon->col, " ");
+        cannon->col += direction;
+        mvprintw(cannon->row, cannon->col, "|");
+	    move(LINES-1,COLS-1);	/* park cursor		*/
+	    refresh();			/* and show it		*/
+    }
+
 	pthread_mutex_unlock(&mx);	/* done with curses	*/
 }
 
@@ -263,11 +271,11 @@ struct ship* create_list(int row, int col){
     if(ptr == NULL){
         return NULL;
     }
+
     char* ship_string = "<--->";
     ptr->str = ship_string;
     ptr->row = row;
     ptr->col = col;
-    //ptr->delay = 5;
     ptr->delay = 1+(rand()%15);
     ptr->next = NULL;
 
@@ -284,11 +292,11 @@ struct ship* add_ship(int row, int col){
     if(ptr == NULL){
         return NULL;
     }
+
     char* ship_string = "<--->";
     ptr->str = ship_string;
     ptr->row = row;
     ptr->col = col;
-    //ptr->delay = 5;
     ptr->delay = 1+(rand()%15);
     ptr->next = NULL;
 

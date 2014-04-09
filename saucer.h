@@ -51,6 +51,7 @@ struct ship *current = NULL;
 sig_atomic_t total_rockets = 5;
 sig_atomic_t escaped_ships = 0;
 sig_atomic_t score = 0;
+sig_atomic_t game_over = 0;
 int current_rocket_thread = 0;
 
 /* ship LL management functions */
