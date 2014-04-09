@@ -11,17 +11,17 @@
 
 int main(int ac, char *av[])
 {
-		int	            c;		        /* user input		*/
-		pthread_t       rocket_threads[MAX_ROCKET];	/* the threads		*/
-        pthread_t       spawn_thread;
-        pthread_t       score_thread;
-        struct cannon_info *cannon;   
-        struct rocket   rockets[10];
-		void	        *animate();	    /* the function		*/
-        void            *spawn_ships(); /* the function */
-        void            *keep_score(); /* the function */
-		int	            num_msg ;	    /* number of strings	*/
-		int	            i;
+		int	                c;		                    /* user input */
+		pthread_t           rocket_threads[MAX_ROCKET]; /* the threads */
+        pthread_t           spawn_thread;
+        pthread_t           score_thread;
+        struct cannon_info  *cannon;   
+        struct rocket       rockets[10];
+		void	            *animate();	                /* the function */
+        void                *spawn_ships();             /* the function */
+        void                *keep_score();              /* the function */
+		int	                num_msg ;	                /* number of strings */
+		int	                i;                          /* loop counter */
 
 	    setup_ncurses();
 
@@ -148,12 +148,16 @@ void *keep_score(void* arg)
  	   	        usleep(10*TUNIT);
              
                 if(game_over > 0){
+ 	   	                pthread_mutex_lock(&mx);	/* only one thread	*/
  	                    clear();
- 	                    mvprintw(LINES-8,(COLS/2)-(strlen(str)/2),str);
- 	                    mvprintw(LINES-4,0,"GAME OVER!!!");
- 	                    mvprintw(LINES-3,0,"You had this many rockets remaining: %d ", total_rockets);
- 	                    mvprintw(LINES-2,0,"You let this many ships escape!: %d", escaped_ships);
- 	                    mvprintw(LINES-1,0,"'Q' to quit");
+ 	                    mvprintw(LINES-8, (COLS/2)-(strlen(str)/2),str);
+ 	                    mvprintw(LINES-4, 0, "GAME OVER!!!");
+ 	                    mvprintw(LINES-3, 0,
+                            "You had this many rockets remaining: %d ", total_rockets);
+ 	                    mvprintw(LINES-2, 0,
+                            "You let this many ships escape!: %d", escaped_ships);
+ 	                    mvprintw(LINES-1, 0, "'Q' to quit");
+ 	   	                pthread_mutex_unlock(&mx);	/* done with curses	*/
                         pthread_exit(NULL);
                 }
  
@@ -189,8 +193,8 @@ void *animate(void *arg)
                         if(total_rockets <= MAX_ROCKET){
                                 total_rockets += 1;
                         }
+                        /* Add to the score */
                         score += 100;
-
                         /* clear ship from the screen */
                         mvprintw(ship_info->row, ship_info->col, "     ");
                         /* exit from the thread */
@@ -201,7 +205,6 @@ void *animate(void *arg)
  	   	        ship_info->col += 1;
  	   	        if (ship_info->col >= COLS){
                         /* means ship has left the screen */
-                        /* TODO increment the escaped ships counter */
                         escaped_ships += 1;
                         if(escaped_ships >= ESCAPES_FOR_LOSS){
                                 game_over = 1;
@@ -226,15 +229,14 @@ void *fire_rocket(void *arg)
   	   		   	addch(' ');			/* at a the same time	*/
   	   		   	move( rocket_info->row-1, rocket_info->col );	/* can call curses	*/
   	   		   	addstr( rocket_info->str );		/* Since I doubt it is	*/
-                //addch(' ');			/* reentrant		*/
   	   		   	move(LINES-1,COLS-1);	/* park cursor		*/
   	   		   	refresh();			/* and show it		*/
   	   		   	pthread_mutex_unlock(&mx);	/* done with curses	*/
 
                 /* check if any ship is hit */
-                //struct ship* find_ship(int row, int col){
                 ship_hit = find_ship(rocket_info->row, rocket_info->col);
                 if(ship_hit != NULL){
+                        /* TODO remove these debug prints */
                         mvprintw(LINES-9, 0, "rocket row: %d", rocket_info->row);
                         mvprintw(LINES-8, 0, "rocket col: %d", rocket_info->col);
                         mvprintw(LINES-7, 0, "SHIP HIT row: %d", ship_hit->row);
@@ -251,11 +253,7 @@ void *fire_rocket(void *arg)
                         mvprintw(LINES-5, 0, "        ");
                 }
   
-  	   		   	/* make the rocket move up one row */
-  	   		   	rocket_info->row = rocket_info->row -= 1;
-                if (rocket_info->row < 0){
-  	   		   	        //move( rocket_info->row+1, rocket_info->col );	/* can call curses	*/
-                        //addch(' ');			/* at a the same time	*/
+                if (rocket_info->row <= 0){
   	   		   	        pthread_mutex_lock(&mx);	/* only one thread	*/
                         mvprintw(rocket_info->row, rocket_info->col, " ");
                         addch(' ');			/* at a the same time	*/
@@ -269,6 +267,8 @@ void *fire_rocket(void *arg)
                         }
                         pthread_exit(NULL);
                 }
+  	   		   	/* make the rocket move up one row */
+  	   		   	rocket_info->row = rocket_info->row -= 1;
         }
 }
 
