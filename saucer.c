@@ -38,8 +38,8 @@ int main(int ac, char *av[])
 	setup_ncurses();
 
     /* initialize list of ships */
-    struct ship *ptr = NULL;
-    add_ship(0, 0);
+    //struct ship *ptr = NULL;
+    //add_ship(0, 0);
 
     /* Create a thread to spawn and manage new ships */
     if(pthread_create(&spawn_thread, NULL, spawn_ships, head)){
@@ -54,14 +54,6 @@ int main(int ac, char *av[])
 			endwin();
 			exit(0);
 	}
-
-	/* create all the threads */
-	//for(i=0 ; i<NUM_OF_SHIPS; i++)
-//		if ( pthread_create(&thrds[i], NULL, animate, &props[i])){
-//			fprintf(stderr,"error creating thread");
-//			endwin();
-//			exit(0);
-//		}
 
     /* draw the cannon at the middle of the screen */
     char* cannon_string = "|";
@@ -116,6 +108,10 @@ int main(int ac, char *av[])
 	endwin();
 
     /* before quitting, and after threads exit free all remaining ship nodes */
+	//pthread_t       rocket_threads[MAX_ROCKET];	/* the threads		*/
+    //pthread_t       spawn_thread;
+    //pthread_t       score_thread;
+   
 	return 0;
 }
 
@@ -158,13 +154,14 @@ void *spawn_ships(void *arg){
 }
 
 void *keep_score(void* arg){
+    char *str = "THE INVASION CONTINUES!!!";
+
 	while( 1 )
 	{
 		usleep(10*TUNIT);
 
         if(game_over > 0){
 	        clear();
-            char *str = "THE INVASION CONTINUES!!!";
 	        mvprintw(LINES-8,(COLS/2)-(strlen(str)/2),str);
 	        mvprintw(LINES-4,0,"GAME OVER!!!");
 	        mvprintw(LINES-3,0,"You had this many rockets remaining: %d ", total_rockets);
@@ -275,7 +272,6 @@ void draw_cannon(struct cannon_info *cannon){
 
 void move_cannon(int direction, struct cannon_info *cannon){
 	pthread_mutex_lock(&mx);	/* only one thread	*/
-
     cannon->col += direction;
     if(cannon->col >= 0 && cannon->col <= COLS-1){
         mvprintw(cannon->row, cannon->col-direction, " ");
@@ -286,7 +282,6 @@ void move_cannon(int direction, struct cannon_info *cannon){
     else{
         cannon->col -= direction;
     }
-
 	pthread_mutex_unlock(&mx);	/* done with curses	*/
 }
 

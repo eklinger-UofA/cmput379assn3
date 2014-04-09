@@ -2,6 +2,10 @@ make:
 	cc -c saucer.c saucer.h
 	cc saucer.o -lncurses -lpthread -o saucer
 
+all:
+	cc -c saucer.c saucer.h
+	cc saucer.o -lncurses -lpthread -o saucer
+
 run:
 	./saucer
 
