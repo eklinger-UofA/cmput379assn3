@@ -73,7 +73,7 @@ int main(int ac, char *av[])
 	while(1) {
 		c = getch();
 		if ( c == 'Q' ) break;
-		if ( c == ' ' ){ 
+		if ( c == ' ' && game_over == 0 ){ 
             /* Need to select a rocket and fire it */
             char* rocket_string = "^";
             rockets[0].str = rocket_string;
@@ -86,15 +86,10 @@ int main(int ac, char *av[])
 			    exit(0);
 		    }   
         }
-        if ( c == 67 ) /* move the cannon right */
+        if ( c == 67 && game_over == 0 ) /* move the cannon right */
             move_cannon(1, cannon);
-        if ( c == 68 ) /* move the cannon left */
+        if ( c == 68 && game_over == 0 ) /* move the cannon left */
             move_cannon(-1, cannon);
-        //if (game_over > 0){
-	     //   clear();
-	      //  mvprintw(LINES-3,0,"GAME OVER");
-	       // mvprintw(LINES-1,0,"'Q' to quit");
-        //}
         /* TODO rm this since its just debug output */
         if ( c == 'i'){
 			pthread_mutex_lock(&mx);	/* only one thread	*/
@@ -165,6 +160,15 @@ void *keep_score(void* arg){
 	{
 		usleep(10*TUNIT);
 
+        if(game_over > 0){
+	        clear();
+	        mvprintw(LINES-4,0,"GAME OVER!!!");
+	        mvprintw(LINES-3,0,"You had this many rockets remaining: %d ", total_rockets);
+	        mvprintw(LINES-2,0,"You let this many ships escape!: %d", escaped_ships);
+	        mvprintw(LINES-1,0,"'Q' to quit");
+            pthread_exit(NULL);
+        }
+
 		pthread_mutex_lock(&mx);	/* only one thread	*/
         mvprintw(LINES-1,COLS/4,"Rockets: %d ", total_rockets);
 	    mvprintw(LINES-1,COLS/2,"Escaped ships: %d", escaped_ships);
@@ -200,7 +204,7 @@ void *animate(void *arg)
             /* means ship has left the screen */
             /* TODO increment the escaped ships counter */
             escaped_ships += 1;
-            if(escaped_ships >= 5){
+            if(escaped_ships >= ESCAPES_FOR_LOSS){
                 game_over = 1;
             }
             pthread_exit(NULL);
@@ -253,12 +257,15 @@ void draw_cannon(struct cannon_info *cannon){
 void move_cannon(int direction, struct cannon_info *cannon){
 	pthread_mutex_lock(&mx);	/* only one thread	*/
 
-    if(cannon->col > 0 && cannon->col <= COLS-1){
-        mvprintw(cannon->row, cannon->col, " ");
-        cannon->col += direction;
+    cannon->col += direction;
+    if(cannon->col >= 0 && cannon->col <= COLS-1){
+        mvprintw(cannon->row, cannon->col-direction, " ");
         mvprintw(cannon->row, cannon->col, "|");
 	    move(LINES-1,COLS-1);	/* park cursor		*/
 	    refresh();			/* and show it		*/
+    }
+    else{
+        cannon->col -= direction;
     }
 
 	pthread_mutex_unlock(&mx);	/* done with curses	*/

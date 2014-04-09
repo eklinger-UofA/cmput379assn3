@@ -14,6 +14,7 @@
 /* My constants */
 #define NUM_OF_SHIPS    50
 #define NUM_OF_ROWS     5
+#define ESCAPES_FOR_LOSS    5
 
 struct	propset {
 		char	*str;	/* the message */
