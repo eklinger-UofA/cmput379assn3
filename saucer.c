@@ -24,11 +24,9 @@
 int main(int ac, char *av[])
 {
 	int	            c;		        /* user input		*/
-	//pthread_t       thrds[MAX_ROCKET+1];	/* the threads		*/
 	pthread_t       rocket_threads[MAX_ROCKET];	/* the threads		*/
     pthread_t       spawn_thread;
     pthread_t       score_thread;
-	//struct propset  props[MAXMSG];	/* properties of string	*/
     struct cannon_info *cannon;   
     struct rocket   rockets[10];
 	void	        *animate();	    /* the function		*/
@@ -37,20 +35,12 @@ int main(int ac, char *av[])
 	int	            num_msg ;	    /* number of strings	*/
 	int	            i;
 
-    //char* ship = "<--->";
-    //char* ships[NUM_OF_SHIPS];
-    //ships[0] = ship;
-    //ships[1] = ship;
-    //ships[2] = ship;
-    //num_msg = setup(ac-1,av+1,props);
-	//num_msg = setup_ncurses(NUM_OF_SHIPS, ships, props);
 	setup_ncurses();
 
     /* initialize list of ships */
     struct ship *ptr = NULL;
     add_ship(0, 0);
 
-    //if(pthread_create(&thrds[0], NULL, animate, head)){
     /* Create a thread to spawn and manage new ships */
     if(pthread_create(&spawn_thread, NULL, spawn_ships, head)){
 	        fprintf(stderr,"error creating thread");
@@ -100,10 +90,19 @@ int main(int ac, char *av[])
             move_cannon(1, cannon);
         if ( c == 68 ) /* move the cannon left */
             move_cannon(-1, cannon);
-        if (game_over > 0){
-	        clear();
-	        mvprintw(LINES-3,0,"GAME OVER");
-	        mvprintw(LINES-1,0,"'Q' to quit");
+        //if (game_over > 0){
+	     //   clear();
+	      //  mvprintw(LINES-3,0,"GAME OVER");
+	       // mvprintw(LINES-1,0,"'Q' to quit");
+        //}
+        /* TODO rm this since its just debug output */
+        if ( c == 'i'){
+			pthread_mutex_lock(&mx);	/* only one thread	*/
+            mvprintw(LINES-5, 0,"Row: %d ", current->row);
+	        mvprintw(LINES-4, 0,"Col: %d ", current->col);
+			move(LINES-1,COLS-1);	/* park cursor		*/
+			refresh();			        /* and show it		*/
+			pthread_mutex_unlock(&mx);	/* done with curses	*/
         }
 
 		pthread_mutex_lock(&mx);	    /* only one thread	*/
@@ -197,7 +196,6 @@ void *animate(void *arg)
 		/* move item to next column and check for bouncing	*/
 
 		ship_info->col += 1;
-		//if (ship_info->col+strlen(ship_info->str) >= COLS){
 		if (ship_info->col >= COLS){
             /* means ship has left the screen */
             /* TODO increment the escaped ships counter */
@@ -230,7 +228,7 @@ void *fire_rocket(void *arg)
 		   refresh();			/* and show it		*/
 		pthread_mutex_unlock(&mx);	/* done with curses	*/
 
-		/* */
+		/* make the rocket move up one row */
 		rocket_info->row = rocket_info->row -= 1;
 	}
 }
