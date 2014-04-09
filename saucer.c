@@ -64,7 +64,7 @@ int main(int ac, char *av[])
 	while(1) {
 		c = getch();
 		if ( c == 'Q' ) break;
-		if ( c == ' ' ){ /* This one is the spacebar */ //for(i=0;i<num_msg;i++) //	props[i].dir = -props[i].dir;
+		if ( c == ' ' ){ 
             /* Need to select a rocket and fire it */
             char* rocket_string = "^";
             rockets[0].str = rocket_string;
@@ -86,14 +86,11 @@ int main(int ac, char *av[])
             move_cannon(1, cannon);
         if ( c == 68 ) /* move the cannon left */
             move_cannon(-1, cannon);
-        // TODO add a left and right arrow catch for moving the cannon
 
-        // TODO Add a spacebar catch to fire a rocket
-        // Rocket will be in another thread, needs its starting poition to launch from
-		pthread_mutex_lock(&mx);	/* only one thread	*/
-	       mvprintw(LINES-2,0,"%d",c); /* Print the input character */
-		   refresh();			/* and show it		*/
-		pthread_mutex_unlock(&mx);	/* done with curses	*/
+		pthread_mutex_lock(&mx);	    /* only one thread	*/
+	       mvprintw(LINES-2,0,"%d",c);  /* Print the input character */
+		   refresh();			        /* and show it		*/
+		pthread_mutex_unlock(&mx);	    /* done with curses	*/
 	}
 
 	/* cancel all the threads */
@@ -166,11 +163,7 @@ void *animate(void *arg)
 /* the code that fires a rocket in a thread */
 void *fire_rocket(void *arg)
 {
-    //struct propset *info = arg;		/* point to info block	*/
     struct rocket *rocket_info = arg;		/* point to info block	*/
-    // len will be 1 for a rocket of char '^'
-	//int	len = strlen(info->str)+2;	/* +2 for padding	*/
-	//int	col = rand()%(COLS-len-3);	/* space for padding	*/
 
 	while( 1 )
 	{
@@ -186,17 +179,8 @@ void *fire_rocket(void *arg)
 		   refresh();			/* and show it		*/
 		pthread_mutex_unlock(&mx);	/* done with curses	*/
 
-		/* move item to next column and check for bouncing	*/
-
+		/* */
 		rocket_info->row = rocket_info->row -= 1;
-        //if (  col+len >= COLS && info->dir == 1 ){
-        //    pthread_exit(NULL);
-        //}
-
-		//if ( col <= 0 && info->dir == -1 )
-	//		info->dir = 1;
-	//	else if (  col+len >= COLS && info->dir == 1 )
-	//		info->dir = -1;
 	}
 }
 
@@ -236,4 +220,65 @@ void move_cannon(int direction, struct cannon_info *cannon){
 	pthread_mutex_unlock(&mx);	/* done with curses	*/
 }
 
+struct ship* create_list(int row, int col){
+    struct ship *ptr = (struct ship *)malloc(sizeof(struct ship));
+    if(ptr == NULL){
+        return NULL;
+    }
+    char* ship_string = "<--->";
+    ptr->str = ship_string;
+    ptr->row = row;
+    ptr->col = col;
+    ptr->delay = 5;
+    ptr->next = NULL;
 
+    head = current = ptr;
+    return ptr;
+}
+
+struct ship* add_ship(int row, int col){
+    if(head == NULL){
+        return create_list(row, col);
+    }
+
+    /* we can assume always adding to the end of the LL */
+    struct ship *ptr = (struct ship *)malloc(sizeof(struct ship));
+    if(ptr == NULL){
+        return NULL;
+    }
+    char* ship_string = "<--->";
+    ptr->str = ship_string;
+    ptr->row = row;
+    ptr->col = col;
+    ptr->delay = 5;
+    ptr->next = NULL;
+
+    current->next = ptr;
+    current = ptr;
+    return ptr;
+}
+
+struct ship* find_ship(int row, int col){
+    struct ship *ptr = head;
+    struct ship *temp = NULL;
+    int found = 0;
+
+    while(ptr != NULL){
+        if(ptr->row == row){
+            if(col <= ptr->col <= col+3){
+                found = 1;
+                break;
+            }
+        }
+        temp = ptr;
+        ptr = ptr->next;
+    }
+
+    if(found == 1){
+        /* TODO add the previous pointer before returning */
+        return ptr;
+    }
+    else{
+        return NULL;
+    }
+}

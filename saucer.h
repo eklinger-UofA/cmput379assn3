@@ -20,6 +20,14 @@ struct	propset {
 		int	dir;	/* +1 or -1	*/
 	};
 
+struct ship {
+        char *str;
+        int row;
+        int col;
+        int delay;
+        struct ship *next;
+};
+
 struct cannon_info {
         char *str;
         int row;
@@ -35,8 +43,17 @@ struct rocket {
 
 pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 
+struct ship *head = NULL;
+struct ship *current = NULL;
+
 sig_atomic_t rockets = 0;
 int current_rocket = 0;
+
+/* ship LL management functions */
+struct ship* create_list(int, int);
+struct ship* add_ship(int, int);
+struct ship* find_ship(int, int);
+int delete_ship(int, int);
 
 /* Function prototypes */
 int setup(int, char* [], struct propset []);
