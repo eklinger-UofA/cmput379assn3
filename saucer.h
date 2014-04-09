@@ -28,6 +28,7 @@ struct ship {
         int row;
         int col;
         int delay;
+        int alive;
         struct ship *next;
 };
 
@@ -63,7 +64,7 @@ int delete_ship(struct ship *ship_to_delete);
 
 /* Function prototypes */
 //void setup_ncurses(int, char* [], struct propset []);
-void setup_ncurses();
+void setup_ncurses(); /* finished */
 void *spawn_ships(void*);
 void *keep_score(void*);
 void *animate(void*);
