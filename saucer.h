@@ -59,7 +59,7 @@ int current_rocket_thread = 0;
 struct ship* create_list(int, int);
 struct ship* add_ship(int, int);
 struct ship* find_ship(int, int);
-int delete_ship(int, int);
+int delete_ship(struct ship *ship_to_delete);
 
 /* Function prototypes */
 //void setup_ncurses(int, char* [], struct propset []);

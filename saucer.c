@@ -76,15 +76,17 @@ int main(int ac, char *av[])
 		if ( c == ' ' && game_over == 0 ){ 
             /* Need to select a rocket and fire it */
             char* rocket_string = "^";
-            rockets[0].str = rocket_string;
-            rockets[0].row = cannon->row-1;
-            rockets[0].col = cannon->col;
-            rockets[0].delay = 3;
-            if ( pthread_create(&rocket_threads[9], NULL, fire_rocket, &rockets[0])){
+            int rocket_id = current_rocket_thread;
+            rockets[rocket_id].str = rocket_string;
+            rockets[rocket_id].row = cannon->row-1;
+            rockets[rocket_id].col = cannon->col;
+            rockets[rocket_id].delay = 3;
+            if ( pthread_create(&rocket_threads[rocket_id], NULL, fire_rocket, &rockets[rocket_id])){
 			    fprintf(stderr,"error creating thread");
 			    endwin();
 			    exit(0);
 		    }   
+            current_rocket_thread = (current_rocket_thread + 1)%MAX_ROCKET;
         }
         if ( c == 67 && game_over == 0 ) /* move the cannon right */
             move_cannon(1, cannon);
@@ -162,6 +164,8 @@ void *keep_score(void* arg){
 
         if(game_over > 0){
 	        clear();
+            char *str = "THE INVASION CONTINUES!!!";
+	        mvprintw(LINES-8,(COLS/2)-(strlen(str)/2),str);
 	        mvprintw(LINES-4,0,"GAME OVER!!!");
 	        mvprintw(LINES-3,0,"You had this many rockets remaining: %d ", total_rockets);
 	        mvprintw(LINES-2,0,"You let this many ships escape!: %d", escaped_ships);
@@ -217,23 +221,38 @@ void *fire_rocket(void *arg)
 {
     struct rocket *rocket_info = arg;		/* point to info block	*/
 
-    total_rockets -= 1;
 	while( 1 )
 	{
 		usleep(rocket_info->delay*TUNIT);
 
 		pthread_mutex_lock(&mx);	/* only one thread	*/
-		   move( rocket_info->row, rocket_info->col );	/* can call curses	*/
-		   addch(' ');			/* at a the same time	*/
-		   move( rocket_info->row-1, rocket_info->col );	/* can call curses	*/
-		   addstr( rocket_info->str );		/* Since I doubt it is	*/
-		   addch(' ');			/* reentrant		*/
-		   move(LINES-1,COLS-1);	/* park cursor		*/
-		   refresh();			/* and show it		*/
+		    move( rocket_info->row, rocket_info->col );	/* can call curses	*/
+		    addch(' ');			/* at a the same time	*/
+		    move( rocket_info->row-1, rocket_info->col );	/* can call curses	*/
+		    addstr( rocket_info->str );		/* Since I doubt it is	*/
+             //addch(' ');			/* reentrant		*/
+		    move(LINES-1,COLS-1);	/* park cursor		*/
+		    refresh();			/* and show it		*/
 		pthread_mutex_unlock(&mx);	/* done with curses	*/
 
 		/* make the rocket move up one row */
 		rocket_info->row = rocket_info->row -= 1;
+        if (rocket_info->row < 0){
+		    //move( rocket_info->row+1, rocket_info->col );	/* can call curses	*/
+            //addch(' ');			/* at a the same time	*/
+		    pthread_mutex_lock(&mx);	/* only one thread	*/
+            mvprintw(rocket_info->row, rocket_info->col, " ");
+            addch(' ');			/* at a the same time	*/
+		    move(LINES-1,COLS-1);	/* park cursor		*/
+		    refresh();			/* and show it		*/
+		    pthread_mutex_unlock(&mx);	/* done with curses	*/
+
+            total_rockets -= 1;
+            if(total_rockets <= 0){
+                game_over = 1;
+            }
+            pthread_exit(NULL);
+        }
 	}
 }
 
@@ -311,6 +330,7 @@ struct ship* add_ship(int row, int col){
     return ptr;
 }
 
+/*
 struct ship* find_ship(int row, int col){
     struct ship *ptr = head;
     struct ship *temp = NULL;
@@ -328,12 +348,44 @@ struct ship* find_ship(int row, int col){
     }
 
     if(found == 1){
-        /* TODO add the previous pointer before returning */
         return ptr;
     }
     else{
         return NULL;
     }
 }
+*/
 
 /* TODO write delete */
+int delete_ship(struct ship *ship_to_delete){
+    struct ship *del = head;
+    struct ship *prev = NULL;
+
+    while(del != NULL){
+        if(del == ship_to_delete){
+            break;
+        }
+        prev = del;
+        del = del->next;
+    }
+        
+    if(del == NULL){
+        return -1;
+    }
+    else{
+        if(prev != NULL){
+            prev->next = del->next;
+        }
+        if(del == current){
+            current=prev;
+        }
+        else if(del == head){
+            head = del->next;
+        }
+    }
+
+    free(del);
+    del=NULL;
+
+    return 0;
+}
