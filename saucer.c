@@ -189,6 +189,8 @@ void *animate(void *arg)
                         if(total_rockets <= MAX_ROCKET){
                                 total_rockets += 1;
                         }
+                        score += 100;
+
                         /* clear ship from the screen */
                         mvprintw(ship_info->row, ship_info->col, "     ");
                         /* exit from the thread */
@@ -231,10 +233,19 @@ void *fire_rocket(void *arg)
 
                 /* check if any ship is hit */
                 //struct ship* find_ship(int row, int col){
-                ship_hit = find_ship(rocket_info->row, 0);
+                ship_hit = find_ship(rocket_info->row, rocket_info->col);
                 if(ship_hit != NULL){
+                        mvprintw(LINES-9, 0, "rocket row: %d", rocket_info->row);
+                        mvprintw(LINES-8, 0, "rocket col: %d", rocket_info->col);
+                        mvprintw(LINES-7, 0, "SHIP HIT row: %d", ship_hit->row);
+                        mvprintw(LINES-6, 0, "SHIP HIT col: %d", ship_hit->col);
                         mvprintw(LINES-5, 0, "SHIP HIT");
                         ship_hit->alive=0;
+  	   		   	        pthread_mutex_lock(&mx);	/* only one thread	*/
+                        mvprintw(rocket_info->row-1, rocket_info->col, " ");
+  	   		   	        refresh();			/* and show it		*/
+  	   		   	        pthread_mutex_unlock(&mx);	/* done with curses	*/
+                        pthread_exit(NULL);
                 }
                 else{
                         mvprintw(LINES-5, 0, "        ");
@@ -342,12 +353,11 @@ struct ship* find_ship(int row, int col){
 
     while(ptr != NULL){
         if(ptr->row == row && ptr->alive == 1){
-                found = 1;
-                break;
-            //if(col <= ptr->col <= col+3){
-             //   found = 1;
-              //  break;
-            //}
+                //if(ptr->col <= col <= ptr->col+strlen(ptr->str)){
+                if(ptr->col <= col && col <= ptr->col+strlen(ptr->str)){
+                        found = 1;
+                        break;
+                }
         }
         temp = ptr;
         ptr = ptr->next;
