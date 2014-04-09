@@ -44,15 +44,27 @@ int main(int ac, char *av[])
     ships[1] = ship;
     ships[2] = ship;
     //num_msg = setup(ac-1,av+1,props);
-	num_msg = setup(NUM_OF_SHIPS, ships, props);
+	//num_msg = setup_ncurses(NUM_OF_SHIPS, ships, props);
+	setup_ncurses();
 
-	/* create all the threads */
-	for(i=0 ; i<num_msg; i++)
-		if ( pthread_create(&thrds[i], NULL, animate, &props[i])){
-			fprintf(stderr,"error creating thread");
+    /* initialize list of ships */
+    struct ship *ptr = NULL;
+    add_ship(0, 0);
+
+    if(pthread_create(&thrds[0], NULL, animate, head)){
+	        fprintf(stderr,"error creating thread");
 			endwin();
 			exit(0);
-		}
+	}
+
+
+	/* create all the threads */
+	//for(i=0 ; i<NUM_OF_SHIPS; i++)
+//		if ( pthread_create(&thrds[i], NULL, animate, &props[i])){
+//			fprintf(stderr,"error creating thread");
+//			endwin();
+//			exit(0);
+//		}
 
     /* draw the cannon at the middle of the screen */
     char* cannon_string = "|";
@@ -101,46 +113,48 @@ int main(int ac, char *av[])
 	return 0;
 }
 
-int setup(int nstrings, char *strings[], struct propset props[])
+//void setup_ncurses(int nstrings, char *strings[], struct propset props[])
+void setup_ncurses()
 {
-	int num_msg = ( nstrings > MAXMSG ? MAXMSG : nstrings );
-	int i;
+	//int num_msg = ( nstrings > MAXMSG ? MAXMSG : nstrings );
+	//int i;
 
 	/* assign rows and velocities to each string */
-	srand(getpid());
-	for(i=0 ; i<num_msg; i++){
-		props[i].str = strings[i];	/* the message	*/
-		props[i].row = i;		/* the row	*/
-		props[i].delay = 1+(rand()%15);	/* a speed	*/
-		//props[i].dir = ((rand()%2)?1:-1);	/* +1 or -1	*/
-		props[i].dir = 1;	/* +1 or -1	*/
-	}
+	//srand(getpid());
+	//for(i=0 ; i<num_msg; i++){
+	//	props[i].str = strings[i];	/* the message	*/
+	//	props[i].row = i;		/* the row	*/
+	//	props[i].delay = 1+(rand()%15);	/* a speed	*/
+	//	//props[i].dir = ((rand()%2)?1:-1);	/* +1 or -1	*/
+	//	props[i].dir = 1;	/* +1 or -1	*/
+	//}
 
-	/* set up curses */
+	/* set up ncurses */
 	initscr();
 	crmode();
 	noecho();
 	clear();
-	mvprintw(LINES-1,0,"'Q' to quit, '0'..'%d' to bounce",num_msg-1);
+	mvprintw(LINES-1,0,"'Q' to quit, 'space' to shoot");
 
-	return num_msg;
+	//return num_msg;
 }
 
 /* the code that runs in each thread */
 void *animate(void *arg)
 {
-	struct propset *info = arg;		/* point to info block	*/
-	int	len = strlen(info->str)+2;	/* +2 for padding	*/
-	int	col = rand()%(COLS-len-3);	/* space for padding	*/
+	//struct propset *info = arg;		/* point to info block	*/
+    struct ship *ship_info = arg;
+	//int	len = strlen(info->str)+2;	/* +2 for padding	*/
+	//int	col = rand()%(COLS-len-3);	/* space for padding	*/
 
 	while( 1 )
 	{
-		usleep(info->delay*TUNIT);
+		usleep(ship_info->delay*TUNIT);
 
 		pthread_mutex_lock(&mx);	/* only one thread	*/
-		   move( info->row, col );	/* can call curses	*/
+		   move( ship_info->row, ship_info->col );	/* can call curses	*/
 		   addch(' ');			/* at a the same time	*/
-		   addstr( info->str );		/* Since I doubt it is	*/
+		   addstr( ship_info->str );		/* Since I doubt it is	*/
 		   addch(' ');			/* reentrant		*/
 		   move(LINES-1,COLS-1);	/* park cursor		*/
 		   refresh();			/* and show it		*/
@@ -148,8 +162,8 @@ void *animate(void *arg)
 
 		/* move item to next column and check for bouncing	*/
 
-		col += info->dir;
-		if (  col+len >= COLS && info->dir == 1 ){
+		ship_info->col += 1;
+		if (ship_info->col+strlen(ship_info->str) >= COLS){
             pthread_exit(NULL);
         }
 
@@ -241,7 +255,6 @@ struct ship* add_ship(int row, int col){
         return create_list(row, col);
     }
 
-    /* we can assume always adding to the end of the LL */
     struct ship *ptr = (struct ship *)malloc(sizeof(struct ship));
     if(ptr == NULL){
         return NULL;
@@ -253,6 +266,7 @@ struct ship* add_ship(int row, int col){
     ptr->delay = 5;
     ptr->next = NULL;
 
+    /* we can assume always adding to the end of the LL */
     current->next = ptr;
     current = ptr;
     return ptr;

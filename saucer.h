@@ -56,7 +56,8 @@ struct ship* find_ship(int, int);
 int delete_ship(int, int);
 
 /* Function prototypes */
-int setup(int, char* [], struct propset []);
+//void setup_ncurses(int, char* [], struct propset []);
+void setup_ncurses();
 void *animate(void*);
 void *fire_rocket(void*);
 void draw_cannon(struct cannon_info *cannon);
