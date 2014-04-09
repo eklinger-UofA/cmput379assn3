@@ -1,0 +1,22 @@
+Welcome to the next big thing in terminal based scace invasion games
+
+How to build:
+$> make all
+
+How to start the game:
+$> make run
+
+And how to clean up the extra files:
+$> make clean
+
+Now more back story
+
+DEFEND TERRA OR PERISH
+
+The evil alien invaders are coming to get us, and all we have is one cannon to fire at them.
+
+You only have 5 rockets to start (since we aren't very prepared)
+
+If more than 5 ships get past our defences we are doomed.
+
+Best of luck, and no pressure right ;)
