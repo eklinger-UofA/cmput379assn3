@@ -50,10 +50,10 @@ pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 struct ship *head = NULL;
 struct ship *current = NULL;
 
-sig_atomic_t total_rockets = 5;
-sig_atomic_t escaped_ships = 0;
-sig_atomic_t score = 0;
-sig_atomic_t game_over = 0;
+int total_rockets = 5;
+int escaped_ships = 0;
+int score = 0;
+int game_over = 0;
 int current_rocket_thread = 0;
 
 /* ship LL management functions */
@@ -63,8 +63,7 @@ struct ship* find_ship(int, int);
 int delete_ship(struct ship *ship_to_delete);
 
 /* Function prototypes */
-//void setup_ncurses(int, char* [], struct propset []);
-void setup_ncurses(); /* finished */
+void setup_ncurses();
 void *spawn_ships(void*);
 void *keep_score(void*);
 void *animate(void*);
