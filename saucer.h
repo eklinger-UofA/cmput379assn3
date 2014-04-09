@@ -8,10 +8,12 @@
 #include    <time.h>
 
 #define	MAXMSG	10		/* limit to number of strings	*/
+#define	MAX_ROCKET	10		/* limit to number of rockets	*/
 #define	TUNIT   20000		/* timeunits in microseconds */
 
 /* My constants */
-#define NUM_OF_SHIPS    3
+#define NUM_OF_SHIPS    50
+#define NUM_OF_ROWS     5
 
 struct	propset {
 		char	*str;	/* the message */
@@ -46,8 +48,10 @@ pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 struct ship *head = NULL;
 struct ship *current = NULL;
 
-sig_atomic_t rockets = 0;
-int current_rocket = 0;
+sig_atomic_t total_rockets = 5;
+sig_atomic_t escaped_ships = 0;
+sig_atomic_t score = 0;
+int current_rocket_thread = 0;
 
 /* ship LL management functions */
 struct ship* create_list(int, int);
@@ -58,6 +62,7 @@ int delete_ship(int, int);
 /* Function prototypes */
 //void setup_ncurses(int, char* [], struct propset []);
 void setup_ncurses();
+void *spawn_ships(void*);
 void *animate(void*);
 void *fire_rocket(void*);
 void draw_cannon(struct cannon_info *cannon);

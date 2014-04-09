@@ -24,25 +24,21 @@
 int main(int ac, char *av[])
 {
 	int	            c;		        /* user input		*/
-	pthread_t       thrds[MAXMSG];	/* the threads		*/
-	struct propset  props[MAXMSG];	/* properties of string	*/
+	//pthread_t       thrds[MAXMSG];	/* the threads		*/
+	pthread_t       thrds[MAX_ROCKET+1];	/* the threads		*/
+	//struct propset  props[MAXMSG];	/* properties of string	*/
     struct cannon_info *cannon;   
     struct rocket   rockets[10];
 	void	        *animate();	    /* the function		*/
+    void            *spawn_ships();
 	int	            num_msg ;	    /* number of strings	*/
 	int	            i;
 
-    /* TODO add my own usage message / started tutorial */
-	//if ( ac == 1 ){
-//		printf("usage: tanimate string ..\n"); 
-//		exit(1);
-//	}
-
-    char* ship = "<--->";
-    char* ships[NUM_OF_SHIPS];
-    ships[0] = ship;
-    ships[1] = ship;
-    ships[2] = ship;
+    //char* ship = "<--->";
+    //char* ships[NUM_OF_SHIPS];
+    //ships[0] = ship;
+    //ships[1] = ship;
+    //ships[2] = ship;
     //num_msg = setup(ac-1,av+1,props);
 	//num_msg = setup_ncurses(NUM_OF_SHIPS, ships, props);
 	setup_ncurses();
@@ -51,12 +47,12 @@ int main(int ac, char *av[])
     struct ship *ptr = NULL;
     add_ship(0, 0);
 
-    if(pthread_create(&thrds[0], NULL, animate, head)){
+    //if(pthread_create(&thrds[0], NULL, animate, head)){
+    if(pthread_create(&thrds[MAX_ROCKET], NULL, spawn_ships, head)){
 	        fprintf(stderr,"error creating thread");
 			endwin();
 			exit(0);
 	}
-
 
 	/* create all the threads */
 	//for(i=0 ; i<NUM_OF_SHIPS; i++)
@@ -89,11 +85,11 @@ int main(int ac, char *av[])
 			    exit(0);
 		    }   
         }
-		if ( c >= '0' && c <= '9' ){
-			i = c - '0';
-			if ( i < num_msg )
-				props[i].dir = -props[i].dir;
-		}
+		//if ( c >= '0' && c <= '9' ){
+		//	i = c - '0';
+		//	if ( i < num_msg )
+		//		props[i].dir = -props[i].dir;
+		//}
         if ( c == 67 ) /* move the cannon right */
             move_cannon(1, cannon);
         if ( c == 68 ) /* move the cannon left */
@@ -106,38 +102,54 @@ int main(int ac, char *av[])
 	}
 
 	/* cancel all the threads */
+    /* TODO need a new method to cancel threads */
 	pthread_mutex_lock(&mx);
-	for (i=0; i<num_msg; i++ )
-		pthread_cancel(thrds[i]);
+	//for (i=0; i<num_msg; i++ )
+		//pthread_cancel(thrds[i]);
 	endwin();
+
+    /* before quitting, and after threads exit free all remaining ship nodes */
 	return 0;
 }
 
-//void setup_ncurses(int nstrings, char *strings[], struct propset props[])
 void setup_ncurses()
 {
-	//int num_msg = ( nstrings > MAXMSG ? MAXMSG : nstrings );
-	//int i;
-
-	/* assign rows and velocities to each string */
-	//srand(getpid());
-	//for(i=0 ; i<num_msg; i++){
-	//	props[i].str = strings[i];	/* the message	*/
-	//	props[i].row = i;		/* the row	*/
-	//	props[i].delay = 1+(rand()%15);	/* a speed	*/
-	//	//props[i].dir = ((rand()%2)?1:-1);	/* +1 or -1	*/
-	//	props[i].dir = 1;	/* +1 or -1	*/
-	//}
-
 	/* set up ncurses */
 	initscr();
 	crmode();
 	noecho();
 	clear();
+    /* print game information */
 	mvprintw(LINES-1,0,"'Q' to quit, 'space' to shoot");
-
-	//return num_msg;
+	mvprintw(LINES-1,COLS/4,"Rocket Remaining: %d", total_rockets);
+	mvprintw(LINES-1,COLS/2,"Escaped ships: %d", escaped_ships);
+	mvprintw(LINES-1,(COLS/4)*3,"Score: %d", score);
 }
+
+void *spawn_ships(void *arg){
+
+	pthread_t       thrds[NUM_OF_SHIPS];	/* the threads		*/
+    int current_ship_thread = 0;
+    int row = 0;
+
+    while (1){
+        /* random sleep between spawning ships */
+		usleep(100*((rand()%3)+1)*TUNIT);
+
+        /* build a new ship */
+        row = rand()%NUM_OF_ROWS; 
+        add_ship(row, 0);
+
+        /* draw that ship in another thread */
+        if(pthread_create(&thrds[current_ship_thread], NULL, animate, current)){
+	        fprintf(stderr,"error creating thread");
+			endwin();
+			exit(0);
+	    }
+        current_ship_thread = (current_ship_thread+1)%NUM_OF_SHIPS;
+    }
+}
+
 
 /* the code that runs in each thread */
 void *animate(void *arg)
@@ -164,13 +176,10 @@ void *animate(void *arg)
 
 		ship_info->col += 1;
 		if (ship_info->col+strlen(ship_info->str) >= COLS){
+            /* means ship has left the screen */
+            /* TODO increment the escaped ships counter */
             pthread_exit(NULL);
         }
-
-		//if ( col <= 0 && info->dir == -1 )
-	//		info->dir = 1;
-	//	else if (  col+len >= COLS && info->dir == 1 )
-	//		info->dir = -1;
 	}
 }
 
@@ -224,13 +233,6 @@ void move_cannon(int direction, struct cannon_info *cannon){
 		    move(LINES-1,COLS-1);	/* park cursor		*/
 	        refresh();			/* and show it		*/
         }
-        else{
-            mvprintw(cannon->row, cannon->col, " ");
-            cannon->col -= direction;
-            mvprintw(cannon->row, cannon->col, "|");
-		    move(LINES-1,COLS-1);	/* park cursor		*/
-	        refresh();			/* and show it		*/
-        }
 	pthread_mutex_unlock(&mx);	/* done with curses	*/
 }
 
@@ -243,7 +245,8 @@ struct ship* create_list(int row, int col){
     ptr->str = ship_string;
     ptr->row = row;
     ptr->col = col;
-    ptr->delay = 5;
+    //ptr->delay = 5;
+    ptr->delay = 1+(rand()%15);
     ptr->next = NULL;
 
     head = current = ptr;
@@ -263,7 +266,8 @@ struct ship* add_ship(int row, int col){
     ptr->str = ship_string;
     ptr->row = row;
     ptr->col = col;
-    ptr->delay = 5;
+    //ptr->delay = 5;
+    ptr->delay = 1+(rand()%15);
     ptr->next = NULL;
 
     /* we can assume always adding to the end of the LL */
@@ -296,3 +300,5 @@ struct ship* find_ship(int row, int col){
         return NULL;
     }
 }
+
+/* TODO write delete */
